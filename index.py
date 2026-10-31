@@ -1,66 +1,81 @@
-def to_bin_8bit(val: int) -> str:
-    """Helper to display values as clean 8-bit binary strings."""
-    return format(val & 0xFF, "08b")
+class SmartSwitchMonitor:
+    # Device mapping: Bit position -> Device Name
+    DEVICES = {
+        0: "Living Room Light",
+        1: "Ceiling Fan",
+        2: "Air Conditioner",
+        3: "Kitchen Refrigerator",
+        4: "Water Heater",
+        5: "Porch Light",
+        6: "Security Alarm",
+        7: "Smart TV",
+    }
+
+    def __init__(self, initial_state: int = 0b00000000):
+        self.state = initial_state & 0xFF  # Constrain to 8 bits
+
+    def display_status(self):
+        """Displays formatted binary, hex, and the individual device states."""
+        binary_str = f"{self.state:08b}"
+        print(f"\n{'='*45}")
+        print(f"Current State: 0b{binary_str} | Decimal: {self.state} | Hex: 0x{self.state:02X}")
+        print(f"{'='*45}")
+        print(f"{'Bit':<4} | {'Status':<6} | {'Device Name'}")
+        print(f"{'-'*45}")
+        for bit, name in self.DEVICES.items():
+            # Check bit status using bitwise AND with a mask (1 << bit)
+            is_on = bool(self.state & (1 << bit))
+            status = "ON [1]" if is_on else "OFF [0]"
+            print(f"{bit:<4} | {status:<6} | {name}")
+        print(f"{'='*45}\n")
+
+    def turn_on(self, bit: int):
+        """Turns ON a switch using Bitwise OR (|)."""
+        mask = 1 << bit
+        self.state |= mask
+        print(f"-> Turned ON: {self.DEVICES.get(bit, 'Unknown')} (Mask: 0b{mask:08b})")
+
+    def turn_off(self, bit: int):
+        """Turns OFF a switch using Bitwise AND (&) with inverted mask (~)."""
+        mask = 1 << bit
+        self.state &= ~mask
+        print(f"-> Turned OFF: {self.DEVICES.get(bit, 'Unknown')} (Mask: ~0b{mask:08b})")
+
+    def toggle(self, bit: int):
+        """Toggles a switch state using Bitwise XOR (^)."""
+        mask = 1 << bit
+        self.state ^= mask
+        print(f"-> Toggled: {self.DEVICES.get(bit, 'Unknown')} (Mask: 0b{mask:08b})")
+
+    def inspect_mask(self, mask: int):
+        """Checks if all specified mask bits are active simultaneously."""
+        print(f"\nChecking mask 0b{mask:08b} against current state 0b{self.state:08b}:")
+        all_match = (self.state & mask) == mask
+        any_match = (self.state & mask) != 0
+        print(f" - Are ALL mask switches ON? {'Yes' if all_match else 'No'}")
+        print(f" - Is AT LEAST ONE mask switch ON? {'Yes' if any_match else 'No'}")
 
 
-def count_set_bits(val: int) -> int:
-    """Counts the number of set bits (1s) in a number."""
-    # Alternatively, you can use val.bit_count() in Python 3.10+
-    count = 0
-    while val > 0:
-        count += val & 1
-        val >>= 1
-    return count
-
-
-def bit_scanner():
-    print("=" * 45)
-    print("      MY SECRET CODE BIT SCANNER      ")
-    print("=" * 45)
-
-    # 1. Input Values
-    try:
-        secret_code = int(input("Enter Secret Code (0-255): "))
-        access_key = int(input("Enter Access Key (0-255):  "))
-    except ValueError:
-        print("Please enter valid integers.")
-        return
-
-    print("\n--- 1. Binary Representations ---")
-    print(f"Secret Code : {secret_code:>3}  ->  [0b{to_bin_8bit(secret_code)}]")
-    print(f"Access Key  : {access_key:>3}  ->  [0b{to_bin_8bit(access_key)}]")
-
-    print("\n--- 2. Bitwise Comparisons ---")
-    and_result = secret_code & access_key
-    or_result = secret_code | access_key
-    xor_result = secret_code ^ access_key
-
-    print(
-        f"AND  (Code & Key) : {and_result:>3}  ->  [0b{to_bin_8bit(and_result)}]  (Matching active bits)"
-    )
-    print(
-        f"OR   (Code | Key) : {or_result:>3}  ->  [0b{to_bin_8bit(or_result)}]  (Combined active bits)"
-    )
-    print(
-        f"XOR  (Code ^ Key) : {xor_result:>3}  ->  [0b{to_bin_8bit(xor_result)}]  (Differing bits)"
-    )
-
-    print("\n--- 3. Bit Inversion / Flipping ---")
-    # Masking with 0xFF keeps the display focused on an 8-bit byte representation
-    flipped_code = ~secret_code & 0xFF
-    print(f"NOT  (~Code)      : {flipped_code:>3}  ->  [0b{to_bin_8bit(flipped_code)}]")
-
-    print("\n--- 4. Bit Shifting (Secret Code) ---")
-    left_shift = (secret_code << 1) & 0xFF
-    right_shift = secret_code >> 1
-    print(f"Left Shift  (<< 1): {left_shift:>3}  ->  [0b{to_bin_8bit(left_shift)}]")
-    print(f"Right Shift (>> 1): {right_shift:>3}  ->  [0b{to_bin_8bit(right_shift)}]")
-
-    print("\n--- 5. Bit Counter ---")
-    print(f"Set bits (1s) in Secret Code : {count_set_bits(secret_code)}")
-    print(f"Set bits (1s) in Access Key  : {count_set_bits(access_key)}")
-    print(f"Mismatched bits (Hamming Dist): {count_set_bits(xor_result)}")
-
-
+# ----------------------------------------------------
+# Example Classroom Walkthrough
+# ----------------------------------------------------
 if __name__ == "__main__":
-    bit_scanner()
+    # Start with Living Room Light (bit 0) and Smart TV (bit 7) ON: 0b10000001 (129)
+    monitor = SmartSwitchMonitor(0b10000001)
+    monitor.display_status()
+
+    # 1. Turn ON the Air Conditioner (bit 2) using bitwise OR
+    monitor.turn_on(2)
+
+    # 2. Toggle the Living Room Light (bit 0) using bitwise XOR
+    monitor.toggle(0)
+
+    # 3. Turn OFF the Smart TV (bit 7) using bitwise AND NOT
+    monitor.turn_off(7)
+
+    # Display updated state
+    monitor.display_status()
+
+    # 4. Use a bitmask to check if Climate Control (Fan [1] & AC [2]) is running
+    climate_mask = (1 << 1) | (1 << 2)  # 0b00000110
+    monitor.inspect_mask(climate_mask)
